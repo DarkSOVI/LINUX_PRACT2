@@ -1,5 +1,42 @@
 import argparse
 import sys
+from typing import Dict, List, Optional
+
+# Имитация данных репозитория Alpine Linux.
+MOCKED_ALPINE_REPO: Dict[str, Dict[str, List[str]]] = {
+    "curl": {
+        "description": "Client for URLs",
+        "version": "8.4.0-r0",
+        "depends": ["libcurl", "zlib", "libssh2"]  #Прямые зависимости
+    },
+    "nginx": {
+        "description": "High performance web server",
+        "version": "1.24.0-r0",
+        "depends": ["pcre", "zlib", "openssl", "libc"]
+    },
+    "python3": {
+        "description": "Python 3 interpreter",
+        "version": "3.11.5-r0",
+        "depends": ["libffi", "openssl", "zlib", "expat", "libc"]
+    },
+    "libcurl": {
+        "description": "Shared library for curl",
+        "version": "8.4.0-r0",
+        "depends": ["libc"]
+    },
+    "zlib": {
+        "description": "Compression library",
+        "version": "1.2.13-r0",
+        "depends": ["libc"]
+    },
+    "my-project": {
+        "description": "The custom project",
+        "version": "1.0.0-r0",
+        "depends": ["nginx", "curl", "python3"] #Зависимости нашего пакета
+    }
+}
+
+#-------------------------------------------------------------------------------------------------
 
 def parse_arguments():
     """
@@ -45,31 +82,72 @@ def parse_arguments():
 
     return parser.parse_args()
 
+#-------------------------------------------------------------------------------------------------
+
+def fetch_repo_data(repo_path: str) -> Optional[Dict[str, Dict]]:
+    """
+    Имитирует сетевой запрос к URL-адресу и возвращает смоделированные данные.
+    """
+    print(f"\nПытаемся получить данные репозитория...")
+    
+    #Имитация проверки, что передан URL
+    if repo_path.startswith("http://") or repo_path.startswith("https://"):
+        print(f"  -> Имитация сетевого запроса к URL: {repo_path}")
+        #Возвращаем встроенные данные
+        return MOCKED_ALPINE_REPO
+    else:
+         print(f"Ошибка: Указанный путь '{repo_path}' не похож на URL-адрес.")
+         return None
+
+def get_dependencies(package_name: str, repo_data: Dict[str, Dict]) -> List[str]:
+    """
+    Извлекает список прямых зависимостей для заданного пакета.
+    """
+    if package_name in repo_data:
+        package_info = repo_data[package_name]
+        dependencies = package_info.get("depends", [])
+        return dependencies
+    else:
+        return []
+
+#-------------------------------------------------------------------------------------------------
 
 def run_prototype():
     """
-    Основная функция для запуска прототипа.
+    Основная функция для запуска.
     """
     try:
-        #Получаем и проверяем все параметры
         args = parse_arguments()
-
-        print("Запуск инструмента визуализации графа зависимостей\n")
+        
+        #Вывод настроенных параметров
         print("НАСТРОЕННЫЕ ПАРАМЕТРЫ:")
-        
-        #Преобразуем объект `args` в словарь для удобного вывода
         config = vars(args)
-        
         for key, value in config.items():
             print(f"- **{key.replace('_', '-').capitalize()}**: {value}")
 
-        print("\n Параметры успешно загружены.")
+        #Получение данных репозитория
+        repo_data = fetch_repo_data(args.repo_path)
+        
+        if not repo_data:
+            print("\nНе удалось получить данные репозитория. Завершение.")
+            sys.exit(1)
 
-    #Блок обработки ошибок
+        #Получение и вывод прямых зависимостей
+        package_deps = get_dependencies(args.package, repo_data)
+
+        if package_deps:
+            version = repo_data.get(args.package, {}).get('version', 'N/A')
+            print(f"\nПрямые зависимости для пакета **{args.package}** (Версия: {version}):")
+            for dep in package_deps:
+                print(f"   - {dep}")
+        else:
+            print(f"\nПакет **{args.package}** не найден в репозитории или не имеет прямых зависимостей.")
+
+        print("\nДанные о прямых зависимостях собраны.")
+
     except SystemExit as e:
         if e.code != 0:
-            print("\n Ошибка разбора аргументов. Пожалуйста, проверьте синтаксис.", file=sys.stderr)
-            #argparse уже вывел подробное сообщение об ошибке, поэтому просто завершаем
+            print("\nОшибка разбора аргументов. Пожалуйста, проверьте синтаксис.", file=sys.stderr)
         sys.exit(e.code)
 
 

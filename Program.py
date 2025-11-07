@@ -155,6 +155,36 @@ def find_reverse_dependencies(
 
     return sorted(list(reverse_deps - {start_package}))
 
+def generate_mermaid_graph(graph: Dict[str, List[str]], start_package: str, cycles: List[Tuple[str, str]]) -> str:
+    """
+    Формирует текстовое представление графа зависимостей на языке диаграмм Mermaid.
+    """
+    mermaid_code = ["graph TD;"]
+    
+    all_nodes = set(graph.keys())
+    for deps in graph.values():
+        all_nodes.update(deps)
+        
+    for parent, dependencies in graph.items():
+        if not dependencies:
+            mermaid_code.append(f"    {parent};")
+        else:
+            for dep in dependencies:
+                line = f"    {parent}-->{dep};"
+                mermaid_code.append(line)
+
+    cycle_nodes = set()
+    for p1, p2 in cycles:
+        cycle_nodes.add(p1)
+        cycle_nodes.add(p2)
+
+    if cycle_nodes:
+        mermaid_code.append("\n    %% Подсветка циклов")
+        style_defs = [f"style {node} fill:#f99,stroke:#333,stroke-width:2px;" for node in cycle_nodes]
+        mermaid_code.extend(style_defs)
+
+    return "\n".join(mermaid_code)
+
 def print_ascii_tree(graph: Dict[str, List[str]], start_package: str, repo_data: Dict[str, Dict]):
     """
     Выводит граф зависимостей в формате ASCII-дерева.
@@ -218,6 +248,11 @@ def run_prototype():
         else:
             print(f"   -> Пакет **{args.package}** не используется другими пакетами в графе.")
         
+        mermaid_output = generate_mermaid_graph(forward_graph, args.package, cycles)
+        
+        print("\n--- Визуализация графа на языке Mermaid ---")
+        print(mermaid_output)
+
         if args.ascii_mode == 'tree':
             print_ascii_tree(forward_graph, args.package, repo_data)
         else:

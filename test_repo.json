@@ -1,0 +1,12 @@
+{
+    "A": {"depends": ["B", "C"]},
+    "B": {"depends": ["D", "E"]},
+    "C": {"depends": ["F"]},
+    "D": {"depends": []},
+    "E": {"depends": ["G", "A"]}, 
+    "F": {"depends": ["H"]},
+    "G": {"depends": ["I"]},
+    "H": {"depends": ["I", "J"]},
+    "I": {"depends": ["B"]}, 
+    "J": {"depends": []}
+}
